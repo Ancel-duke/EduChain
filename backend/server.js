@@ -32,7 +32,14 @@ app.use("/api/students", require("./routes/students"));
 
 // Health check
 app.get("/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+  res.json({ 
+    success: true,
+    message: "Server is healthy",
+    data: { 
+      status: "ok", 
+      timestamp: new Date().toISOString() 
+    }
+  });
 });
 
 // MongoDB connection

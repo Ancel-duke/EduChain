@@ -1,22 +1,26 @@
 # EduChain
 
-A full-stack Web3 application for issuing and managing educational certificates as ERC721 NFTs on the blockchain.
+A full-stack Web3 application for issuing and managing educational certificates as ERC721 NFTs on the blockchain. Built with React, Node.js, MongoDB, and Solidity smart contracts.
 
 ## Features
 
 - **ERC721 Certificate NFTs**: Issue verifiable educational certificates as non-fungible tokens
-- **Off-chain Storage**: MongoDB for efficient querying and metadata management
+- **IPFS Metadata Storage**: Certificate metadata stored on IPFS via Pinata
+- **Off-chain Database**: MongoDB for efficient querying and metadata management
 - **Clean UI**: Minimal, grayscale design inspired by Apple, Linear, and Vercel
-- **Web3 Integration**: Connect with MetaMask or other Web3 wallets
-- **Authorized Issuers**: Role-based access control for certificate issuance
+- **Web3 Integration**: RainbowKit wallet connection supporting MetaMask and other wallets
+- **Owner-Only Minting**: Only contract owner can mint certificates (secure issuance)
+- **Certificate Verification**: Verify certificate authenticity on-chain
+- **Non-Transferable NFTs**: Certificates cannot be transferred (prevents selling)
 
 ## Tech Stack
 
-- **Frontend**: React (Create React App), Tailwind CSS (grayscale theme)
-- **Backend**: Node.js, Express
+- **Frontend**: React (Create React App), Tailwind CSS (grayscale theme), RainbowKit, Wagmi, ethers.js
+- **Backend**: Node.js, Express.js, Mongoose
 - **Database**: MongoDB
-- **Blockchain**: Solidity, Hardhat, OpenZeppelin
-- **Web3**: ethers.js
+- **Blockchain**: Solidity (0.8.20), Hardhat, OpenZeppelin v5
+- **IPFS**: Pinata for metadata storage
+- **Web3**: ethers.js v6
 
 ## Project Structure
 
@@ -69,6 +73,12 @@ FRONTEND_URL=http://localhost:3000
 RPC_URL=http://127.0.0.1:8545
 PRIVATE_KEY=your_private_key_here
 CONTRACT_ADDRESS=your_contract_address_here
+
+# IPFS/Pinata Configuration (choose one method)
+PINATA_JWT=your_pinata_jwt_token
+# OR
+PINATA_API_KEY=your_api_key
+PINATA_SECRET_KEY=your_secret_key
 ```
 
 #### Frontend (.env)
@@ -78,6 +88,7 @@ Create `frontend/.env`:
 ```env
 REACT_APP_API_URL=http://localhost:5000/api
 REACT_APP_CONTRACT_ADDRESS=your_contract_address_here
+REACT_APP_WALLETCONNECT_PROJECT_ID=your_project_id
 ```
 
 #### Contracts (.env)
@@ -85,8 +96,10 @@ REACT_APP_CONTRACT_ADDRESS=your_contract_address_here
 Create `contracts/.env`:
 
 ```env
-SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/your_key
+# Optional: For Sepolia deployment
+RPC_URL=https://sepolia.infura.io/v3/your_key
 PRIVATE_KEY=your_private_key_here
+CONTRACT_ADDRESS=your_contract_address_here
 ```
 
 ### 3. Start Local Blockchain (Hardhat)
@@ -116,7 +129,14 @@ npm run deploy:sepolia
 
 After deployment, copy the contract address from the console output and add it to your `.env` files.
 
-### 5. Start MongoDB
+### 5. Configure IPFS (Pinata)
+
+1. Sign up at [Pinata](https://pinata.cloud)
+2. Get your JWT token from the API Keys section (recommended)
+   - OR get API Key and Secret Key
+3. Add to `backend/.env` file
+
+### 6. Start MongoDB
 
 Make sure MongoDB is running:
 
@@ -128,16 +148,16 @@ mongod
 # Update MONGODB_URI in backend/.env
 ```
 
-### 6. Start Backend Server
+### 7. Start Backend Server
 
 ```bash
 cd backend
-npm run dev
+npm start
 ```
 
 The backend will run on `http://localhost:5000`.
 
-### 7. Start Frontend
+### 8. Start Frontend
 
 ```bash
 cd frontend
@@ -148,30 +168,36 @@ The frontend will open at `http://localhost:3000`.
 
 ## Usage
 
-### For Issuers
+### For Institutions (Certificate Issuers)
 
-1. Connect your wallet (must be an authorized issuer)
-2. Navigate to "Issue Certificate" tab
-3. Fill in certificate details:
-   - Certificate ID (unique identifier)
-   - Student wallet address
+1. **Connect Wallet**: Click "Connect Wallet" and select MetaMask
+2. **Switch Network**: Ensure you're on Hardhat Local network (Chain ID: 31337)
+3. **Use Owner Account**: You must use the contract owner account to mint
+   - The contract owner is the address that deployed the contract
+   - Check `contracts/deployments/localhost.json` for the deployer address
+4. **Navigate to Dashboard**: Go to "Institution Dashboard"
+5. **Fill Certificate Form**:
+   - Certificate ID (unique identifier, e.g., `CERT-2024-001`)
+   - Student wallet address (Ethereum address starting with `0x`)
    - Student name
    - Course name
-   - Institution
-   - Token URI (metadata location)
-4. Choose to mint NFT immediately or create off-chain first
-5. Submit the form
+   - Institution name
+6. **Mint Certificate**: Click "Mint Certificate"
+   - Metadata is automatically uploaded to IPFS
+   - NFT is minted on the blockchain
+   - Certificate is saved to MongoDB
 
 ### For Students
 
-1. Connect your wallet
-2. View all certificates associated with your wallet address
-3. Certificates show:
+1. **Connect Wallet**: Connect your wallet to view certificates
+2. **View Certificates**: Navigate to "My Certificates" to see all certificates associated with your wallet
+3. **Verify Certificate**: Use the verification page to verify any certificate by token ID
+4. **Certificate Details**:
    - Course information
    - Issue date
-   - Token ID (if minted)
-   - Transaction hash (if minted)
-   - Status (pending/minted/failed)
+   - Token ID
+   - Transaction hash
+   - IPFS hash (for metadata)
 
 ## Scripts
 
@@ -236,20 +262,23 @@ npm test
 
 ### Key Functions
 
-- `mintCertificate()`: Mint a new certificate NFT
-- `getCertificate()`: Retrieve certificate details by token ID
-- `authorizeIssuer()`: Grant issuance permissions
-- `revokeIssuer()`: Revoke issuance permissions
-- `isAuthorizedIssuer()`: Check if address can issue certificates
+- `mintCertificate(address student, string ipfsHash)`: Mint a new certificate NFT (owner-only)
+- `verifyCertificate(uint256 tokenId)`: Verify certificate authenticity and get details
+- `owner()`: Get contract owner address
+- `totalSupply()`: Get total number of certificates minted
+- `certificateIssueDate(uint256 tokenId)`: Get certificate issue date
+- `certificateStudent(uint256 tokenId)`: Get student address for a certificate
 
 ## API Endpoints
 
+See [backend/API_DOCUMENTATION.md](./backend/API_DOCUMENTATION.md) for complete API documentation.
+
 ### Certificates
 
-- `GET /api/certificates` - Get all certificates (optional filters: `studentAddress`, `status`)
-- `GET /api/certificates/:id` - Get specific certificate
-- `POST /api/certificates` - Create new certificate
-- `PATCH /api/certificates/:id/mint` - Mint NFT for existing certificate
+- `POST /api/certificates/mint` - Mint a new certificate NFT with IPFS upload
+- `GET /api/certificates/verify/:tokenId` - Verify a certificate by token ID
+- `GET /api/certificates` - Get all certificates (optional filters: `studentAddress`)
+- `GET /api/certificates/:id` - Get specific certificate by ID
 
 ### Students
 
@@ -259,32 +288,51 @@ npm test
 
 ## Development Notes
 
-- The frontend uses a strict grayscale theme (white and gray only)
-- No animations or gradients by default
-- Clean, minimal UI inspired by Apple, Linear, and Vercel
-- All blockchain interactions require wallet connection
-- Contract address must be set in environment variables
+- **Design System**: Strict grayscale theme (white and gray only), no animations or gradients
+- **UI Inspiration**: Clean, minimal design inspired by Apple, Linear, and Vercel
+- **Wallet Connection**: RainbowKit integration for seamless wallet connection
+- **Contract Interaction**: Uses ethers.js v6 with provider-based read calls
+- **IPFS Integration**: Automatic metadata upload to IPFS via Pinata
+- **Service-Controller Pattern**: Backend follows service-controller architecture
+- **Error Handling**: Comprehensive error handling with structured JSON responses
+- **Security**: Owner-only minting, input validation, ReentrancyGuard protection
 
 ## Troubleshooting
 
-### Contract not found
-- Ensure contract is deployed and address is set in `.env` files
-- Verify RPC URL is correct
+### "Access Denied" on Dashboard
+- Ensure you're using the contract owner account (check `contracts/deployments/localhost.json`)
+- Verify you're on Hardhat Local network (Chain ID: 31337)
+- Check that contract address matches in both frontend and backend `.env` files
+
+### "Contract not initialized" error
+- Ensure Hardhat node is running (`npm run node` in contracts/)
+- Verify contract is deployed (`npm run deploy:local`)
+- Check `CONTRACT_ADDRESS` is set correctly in `.env` files
 
 ### Wallet connection issues
 - Install MetaMask browser extension
-- Ensure you're on a supported network
+- Ensure you're on Hardhat Local network (Chain ID: 31337)
 - Check browser console for errors
+- Try refreshing the page after connecting wallet
+
+### "IPFS upload failed"
+- Verify Pinata credentials are set in `backend/.env`
+- Check that `PINATA_JWT` or `PINATA_API_KEY`/`PINATA_SECRET_KEY` are correct
+- Ensure Pinata account is active
 
 ### MongoDB connection errors
-- Verify MongoDB is running
-- Check `MONGODB_URI` in backend `.env`
+- Verify MongoDB is running (local) or connection string is correct (Atlas)
+- Check `MONGODB_URI` in `backend/.env`
 - Ensure network access if using cloud MongoDB
+
+### "Certificate ID already exists"
+- Use a unique certificate ID for each certificate
+- Certificate IDs must be unique across all certificates
 
 ### Frontend can't reach backend
 - Verify backend is running on port 5000
-- Check `REACT_APP_API_URL` in frontend `.env`
-- Ensure CORS is configured correctly
+- Check `REACT_APP_API_URL` in `frontend/.env`
+- Ensure CORS is configured correctly in `backend/server.js`
 
 ## License
 

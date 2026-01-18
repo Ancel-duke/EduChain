@@ -30,6 +30,13 @@ contract CertificateNFT is ERC721URIStorage, Ownable, ReentrancyGuard {
         uint256 issueDate
     );
 
+    // Event emitted when a certificate is minted (simplified version)
+    event MintedCertificate(
+        uint256 indexed tokenId,
+        address indexed student,
+        string ipfsHash
+    );
+
     // Event emitted when a certificate is verified
     event CertificateVerified(
         uint256 indexed tokenId,
@@ -72,8 +79,15 @@ contract CertificateNFT is ERC721URIStorage, Ownable, ReentrancyGuard {
         nonReentrant 
         returns (uint256) 
     {
+        // Validate student address - must not be zero address
         require(student != address(0), "CertificateNFT: Student address cannot be zero");
+        
+        // Validate IPFS hash - must not be empty
         require(bytes(ipfsHash).length > 0, "CertificateNFT: IPFS hash cannot be empty");
+        
+        // Additional validation: IPFS hash should have minimum reasonable length
+        // IPFS hashes are typically 46 characters (CIDv0) or longer (CIDv1)
+        require(bytes(ipfsHash).length >= 10, "CertificateNFT: IPFS hash too short");
 
         // Increment token ID
         _tokenIds++;
@@ -92,8 +106,9 @@ contract CertificateNFT is ERC721URIStorage, Ownable, ReentrancyGuard {
         certificateIssueDate[newTokenId] = block.timestamp;
         certificateStudent[newTokenId] = student;
 
-        // Emit event
+        // Emit events
         emit CertificateMinted(newTokenId, student, ipfsHash, block.timestamp);
+        emit MintedCertificate(newTokenId, student, ipfsHash);
 
         return newTokenId;
     }

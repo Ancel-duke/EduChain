@@ -34,11 +34,24 @@ class IPFSService {
 
       const response = await axios.post(url, metadata, { headers });
 
-      if (response.data && response.data.IpfsHash) {
-        return response.data.IpfsHash;
+      // Validate IPFS upload response
+      if (!response.data) {
+        throw new Error('Empty response from Pinata');
       }
 
-      throw new Error('Invalid response from Pinata');
+      if (!response.data.IpfsHash) {
+        throw new Error('IPFS hash not found in Pinata response');
+      }
+
+      const ipfsHash = response.data.IpfsHash;
+      
+      // Validate hash format
+      if (typeof ipfsHash !== 'string' || ipfsHash.length === 0) {
+        throw new Error('Invalid IPFS hash format in response');
+      }
+
+      console.log('[IPFS] Upload successful:', { ipfsHash });
+      return ipfsHash;
     } catch (error) {
       console.error('Error uploading to IPFS:', error.response?.data || error.message);
       throw new Error(`Failed to upload to IPFS: ${error.response?.data?.error?.details || error.message}`);

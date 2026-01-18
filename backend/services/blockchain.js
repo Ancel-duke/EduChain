@@ -6,6 +6,7 @@ const CONTRACT_ABI = [
   "function mintCertificate(address student, string memory ipfsHash) external returns (uint256)",
   "function verifyCertificate(uint256 tokenId) external view returns (bool isValid, address student, uint256 issueDate, string memory ipfsHash)",
   "function totalSupply() external view returns (uint256)",
+  "function owner() external view returns (address)",
   "function getCertificateOwner(uint256 tokenId) external view returns (address owner)",
   "function certificateIssueDate(uint256 tokenId) external view returns (uint256)",
   "function certificateStudent(uint256 tokenId) external view returns (address)",
@@ -116,7 +117,18 @@ async function mintCertificate(studentAddress, tokenURI) {
   try {
     // Check if signer is the owner (only owner can mint)
     const signerAddress = await signer.getAddress();
-    const owner = await contract.owner();
+    
+    // Use provider for read-only calls to avoid signer issues
+    let owner;
+    try {
+      // Try with provider first (read-only, more reliable)
+      const readOnlyContract = new ethers.Contract(contract.target, CONTRACT_ABI, provider);
+      owner = await readOnlyContract.owner();
+    } catch (providerError) {
+      // Fallback to signer-based contract
+      owner = await contract.owner();
+    }
+    
     if (signerAddress.toLowerCase() !== owner.toLowerCase()) {
       throw new Error("Only contract owner can mint certificates. Current signer is not the owner.");
     }
