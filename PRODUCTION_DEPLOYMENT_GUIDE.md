@@ -19,16 +19,28 @@ This happens because:
 
 This allows you to test the full production setup on a public testnet.
 
-#### Step 1: Get Sepolia Testnet RPC URL
+#### Step 1: Get Ethereum Sepolia Testnet RPC URL
+
+**⚠️ Important**: You need **Ethereum Sepolia**, NOT Base Sepolia. They are different networks!
 
 1. Sign up for a free account at:
    - [Alchemy](https://www.alchemy.com/) (recommended)
    - [Infura](https://www.infura.io/)
    - [QuickNode](https://www.quicknode.com/)
 
-2. Create a new app/project
-3. Select **Sepolia** testnet
-4. Copy the **HTTPS RPC URL** (looks like: `https://eth-sepolia.g.alchemy.com/v2/YOUR_API_KEY`)
+2. In Alchemy Dashboard:
+   - Click **"Create App"** or **"Add App"**
+   - **Name**: `EduChain Sepolia` (or any name)
+   - **Chain**: Select **"Ethereum"** (not Base!)
+   - **Network**: Select **"Sepolia"** (not Base Sepolia!)
+   - Click **"Create App"**
+
+3. After creating, click on your app
+4. Copy the **HTTPS RPC URL** from the "View Key" section
+   - Should look like: `https://eth-sepolia.g.alchemy.com/v2/YOUR_API_KEY`
+   - **NOT**: `https://base-sepolia.g.alchemy.com/v2/...` (this is wrong!)
+
+**Quick Check**: The URL should contain `eth-sepolia`, not `base-sepolia`
 
 #### Step 2: Get Sepolia Testnet ETH
 
