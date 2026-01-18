@@ -28,23 +28,33 @@ async function initBlockchain() {
   }
 
   try {
-    const rpcUrl = process.env.RPC_URL || "http://127.0.0.1:8545";
+    // Only initialize if RPC_URL is explicitly set (not localhost)
+    const rpcUrl = process.env.RPC_URL;
+    
+    if (!rpcUrl || rpcUrl.includes('127.0.0.1') || rpcUrl.includes('localhost')) {
+      console.log("Blockchain disabled: No RPC_URL set or using localhost (not available on cloud)");
+      console.log("To enable: Set RPC_URL to a valid testnet/mainnet endpoint (e.g., Infura, Alchemy)");
+      return;
+    }
     
     // Create provider - will retry but we'll catch errors
-    provider = new ethers.JsonRpcProvider(rpcUrl);
+    provider = new ethers.JsonRpcProvider(rpcUrl, undefined, {
+      staticNetwork: false, // Allow network detection
+    });
 
     // Test connection with timeout to prevent hanging
     try {
       const blockNumber = await Promise.race([
         provider.getBlockNumber(),
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Connection timeout')), 2000)
+          setTimeout(() => reject(new Error('Connection timeout')), 5000)
         )
       ]);
       console.log("Blockchain connected. Latest block:", blockNumber);
     } catch (connError) {
       console.warn("Blockchain node not available. NFT minting will be disabled.");
-      console.warn("To enable: Start Hardhat node (npm run node in contracts/) or set RPC_URL to valid endpoint");
+      console.warn("Error:", connError.message);
+      console.warn("To enable: Set RPC_URL to a valid endpoint (e.g., Infura, Alchemy)");
       provider = null;
       return;
     }
@@ -227,11 +237,15 @@ async function getCertificate(tokenId) {
 }
 
 // Initialize on module load (async, won't block)
-// Only initialize if RPC_URL is set, otherwise skip silently
-if (process.env.RPC_URL || process.env.CONTRACT_ADDRESS) {
+// Only initialize if RPC_URL is set and not localhost
+const rpcUrl = process.env.RPC_URL;
+if (rpcUrl && !rpcUrl.includes('127.0.0.1') && !rpcUrl.includes('localhost')) {
   initBlockchain().catch((err) => {
     // Silently fail - blockchain is optional
+    console.warn("Blockchain initialization failed:", err.message);
   });
+} else {
+  console.log("Blockchain initialization skipped: RPC_URL not set or using localhost");
 }
 
 module.exports = {
