@@ -191,6 +191,23 @@ function InstitutionDashboard() {
               <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
                 <p className="text-xs text-red-600 font-medium">Error Details:</p>
                 <p className="text-xs text-red-600 break-all">{checkingError}</p>
+                {checkingError.includes('Contract not found') && (
+                  <div className="mt-3 pt-3 border-t border-red-200">
+                    <p className="text-xs text-red-700 font-medium mb-2">⚠️ Production Deployment Notice:</p>
+                    <p className="text-xs text-red-600 mb-2">
+                      This app is configured for local development (Hardhat Local network). 
+                      The contract address points to a localhost deployment that is not accessible from production.
+                    </p>
+                    <p className="text-xs text-red-600 mb-2">
+                      <strong>Options:</strong>
+                    </p>
+                    <ul className="text-xs text-red-600 list-disc list-inside space-y-1 ml-2">
+                      <li>Use the app on localhost (http://localhost:3000) for development</li>
+                      <li>Deploy the contract to a testnet (Sepolia) and update the contract address</li>
+                      <li>Deploy the contract to mainnet for production use</li>
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -172,6 +172,12 @@ export async function getContractOwner(contract) {
       message: error.message,
       data: error.data,
     });
+    
+    // Provide user-friendly error messages
+    if (error.code === 'CALL_EXCEPTION' || error.code === 'BAD_DATA') {
+      throw new Error('Contract not found on this network. Please ensure: 1) You are connected to the correct network (Hardhat Local for development), 2) The contract is deployed to this network, 3) The contract address is correct.');
+    }
+    
     throw new Error(error.reason || error.message || 'Failed to get contract owner');
   }
 }
